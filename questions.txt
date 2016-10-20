@@ -1,0 +1,1 @@
+Est-ce que si le mot apparaît 2 fois dans un fichier il faut le compter une seule fois (question 6 - 7) ?
