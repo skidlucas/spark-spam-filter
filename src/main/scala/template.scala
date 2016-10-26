@@ -14,14 +14,14 @@ object spamFilter {
         val nbFiles = allTxtFiles.count().toLong
         //Split text files in set of unique word
         //( File1 => [word1,word2, ... ], File2 => ... ) with distinct words
-        var allTxtSplitFiles = allTxtFiles.map(e => (e._1, e._2.split("\\s+").distinct.toList))
+        val allTxtSplitFiles = allTxtFiles.map(e => (e._1, e._2.split("\\s+").distinct.toList))
         
         //Create array with non informative word (scala world)
         val nonInformativeWordsScala = Array(".",":",","," ","/","\\","-","","(",")","@")
         
         //Remove non informative words
         //Take care of empty entry in e._2
-        var cleanFiles = allTxtSplitFiles.map(e => (e._1, e._2.map(w => if (!nonInformativeWordsScala.contains(w)) w else "").filter(_ != "")))
+        val cleanFiles = allTxtSplitFiles.map(e => (e._1, e._2.map(w => if (!nonInformativeWordsScala.contains(w)) w else "").filter(_ != "")))
             
         //Create a list of (word1, 1) for each file
         //And apply distinct to have only one word per file
@@ -114,7 +114,7 @@ object spamFilter {
         //Print topWords
         topWords.foreach(println)
         //save in the file
-        sc.parallelize(topWords).saveAsTextFile("/tmp/topWords.txt"
+        sc.parallelize(topWords).saveAsTextFile("/tmp/topWords.txt")
     }
         
 } // end of spamFilter
