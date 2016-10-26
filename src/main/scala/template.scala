@@ -17,8 +17,7 @@ object spamFilter {
 	    var allTxtSplitFiles = allTxtFiles.map(e => (e._1, e._2.split("\\s+").distinct.toList))
 
 	    //Create array with non informative word (scala world)
-      //Add "!"
-	    val nonInformativeWordsScala = Array(".",":",","," ","/","\\","-","","(",")","@","!")
+	    val nonInformativeWordsScala = Array(".",":",","," ","/","\\","-","","(",")","@")
 
 	    //Remove non informative words
       //Take care of empty entry in e._2
@@ -34,9 +33,7 @@ object spamFilter {
       //Create the rdd with (w, probability)
       //probability of a word is occurence number / nb files
       val probaWord = wordDirOccurency.map(e => (e._1, (e._2.toDouble / nbFiles)))
-      //DEBUG
-      //probaWord.collect().foreach(println)
-      //DEBUG
+      
       (probaWord, nbFiles)
   }
 
@@ -48,7 +45,6 @@ object spamFilter {
     probaDefault: Double // default value when a probability is missing
   ):RDD[(String, Double)] = {
     //We'll take the left join of probaW (proba of the word occurs in a file) with probaWC (proba word occurs in a file of a class)
-    //Using left join because we have a sum in mutual information formula
     //Output is like (Word, (probaOccurs, Some(probaInClass)))
     val probaOccursAndProbaInClass = probaW.leftOuterJoin(probaWC)
     //For each entry if the map has a proba for the class let it or put the default one if value is none
@@ -65,18 +61,6 @@ object spamFilter {
   def main(args: Array[String]) {
 	   val conf = new SparkConf().setAppName("SpamFilter")
   	 val sc = new SparkContext(conf)
-     //TEST probaWordDir
-     //var res = probaWordDir(sc)("/tmp/tp4/*.txt")
-     //TEST
-     //TEST computeMutualInformationFactor
-     //The test doesn't work because the scala version of spark doesn't support Map()
-     //val WC = Map("Bonjour" -> 0.5, "Salut" -> 0.0)
-     //val W = Map("Bonjour" -> 0.75, "Salut" -> 0.5)
-     //val C = 0.5
-     //val Default = 1.0
-     //var res = computeMutualInformationFactor(sc.parallelize(WC.toSeq), sc.parallelize(W.toSeq), C, Default)
-     //TEST
-     //REAL main
      //Compute word probabilities for the ham directory
      val (probaWordHam, nbFilesHam) = probaWordDir(sc)("/tmp/ling-spam/ham/*.txt")
      //Compute word probabilities for the spam directory
@@ -103,7 +87,7 @@ object spamFilter {
      //To retrieve all the words we need to perform a fullouterjoin
      //because some words are only in spam files or in ham files
      val allWords = occursAndHam.fullOuterJoin(occursAndSpam)
-     //We need to put the default value is a value is zero
+     //We need to put the default value if the value is none
      val allWordsDefault = allWords.mapValues { case (h, s) => (h.getOrElse(default), s.getOrElse(default))}
      //To compute mutual information we need to have the proba of a word if it occurs whatever the class (probaW)
      //a word is ham or spam so the result is (word, p(occursAndHam) + p(occursAndSpam))
@@ -122,8 +106,7 @@ object spamFilter {
      )
      //mutualInformationMap.reduce{ (e1, e2) => e1.join(e2).map(e => (e._1, e._2._1 + e._2._2))}.take(10).foreach(println)
      //We have a list that we need to reduce to obtain mutual information of a word
-     //Using reduceLeft looks like a loop
-     //each step, make a join to merge the word and sum the mutual information part
+     //each step, make a join to merge the RDD and sum the mutual information part
      val mutualInformationReduce = mutualInformationMap.reduce {(e1, e2) => e1.join(e2).map(e => (e._1, e._2._1 + e._2._2))}
      //Take 10 top words
      //Use a minus to have descending sort
@@ -132,7 +115,6 @@ object spamFilter {
      topWords.foreach(println)
      //save in the file
      sc.parallelize(topWords).saveAsTextFile("/tmp/topWords.txt")
-	   println("Program ended")
   }
 
 } // end of spamFilter
